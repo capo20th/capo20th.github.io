@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>畫面依序變色</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            width: 100vw;
+        }
+    </style>
+</head>
+<body>
+
+<script>
+    // 定義顏色順序
+    const colors = ["red", "blue", "green", "white"];
+
+    let index = 0; // 目前顏色位置
+
+    function changeColor() {
+        document.body.style.backgroundColor = colors[index];
+        index = (index + 1) % colors.length; // 讓顏色循環
+    }
+
+    // 每秒變換一次顏色
+    setInterval(changeColor, 1000);
+
+    // 載入頁面後立即變第一個顏色
+    changeColor();
+</script>
+
+</body>
+</html>
