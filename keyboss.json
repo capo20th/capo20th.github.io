@@ -16,7 +16,7 @@
             "center_x": 186,
             "center_y": 66,
             "height": 38,
-            "icon": "F2",
+            "icon": "大雞雞",
             "offset_x": 0,
             "offset_y": 0,
             "start_x": 160,
@@ -906,4 +906,5 @@
 
     ]
 }
+
 
