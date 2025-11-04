@@ -1,35 +1,102 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <title>畫面依序變色</title>
-    <style>
-        body {
-            margin: 0;
-            height: 100vh;
-            width: 100vw;
-        }
-    </style>
-</head>
-<body>
+<canvas id="c" width="1000" height="300"
+
+        ></canvas>
+
+<div class = "led" id = "led1"></div>
+
+<div class = "led" id = "led2"></div>
+
+<style>
+    body {
+    /*background: linear-gradient(45deg, red, yellow, green, blue);*/
+    background:black;
+}
+    .box{
+        position:absolute;
+        top : 23;
+        left : 128;
+        width : 100;
+        height : 100;
+        background :red;
+        z-index : 0;
+}
+
+    .led{
+        position:absolute;
+        top : 200;
+        left : 180;
+        width : 200px;
+        height : 200px;
+        border-radius :50%;
+        background: radial-gradient(circle closest-side, rgba(255,0,0,1),
+        rgba(255,0,0,0)
+        );
+        z-index : 0;
+}
+    #c {
+    position: absolute; /* 讓 z-index 生效 */
+    top: 100;
+    left: 100;
+
+    z-index: 1;        /* 比 .box 高 */
+}
+</style>
 
 <script>
-    // 定義顏色順序
-    const colors = ["red", "blue", "green", "white"];
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
 
-    let index = 0; // 目前顏色位置
+// 畫大方塊
+ctx.fillStyle = 'rgb(50,50,50)';
+ctx.fillRect(0, 0, 1000, 300);
 
-    function changeColor() {
-        document.body.style.backgroundColor = colors[index];
-        index = (index + 1) % colors.length; // 讓顏色循環
-    }
+// 挖小洞（清除部分像素）
+ctx.clearRect(150, 150, 50, 50);
 
-    // 每秒變換一次顏色
-    setInterval(changeColor, 1000);
+ctx.fillStyle = 'rgb(50,50,50)';
+ctx.fillRect(154, 154, 42, 42);
 
-    // 載入頁面後立即變第一個顏色
-    changeColor();
+// 設定字型和大小
+ctx.font = '30px Arial';      // 30px 大小，字型 Arial
+ctx.fillStyle = 'red';       // 填滿顏色藍色
+
+// 寫字
+ctx.fillText('Hello', 50, 50); // x=50, y=50
+
+const ob_led2 = document.getElementById('led2');
+ob_led2.style.background = 'radial-gradient(circle closest-side, rgba(0,255,0,1),rgba(0,255,0,0))';
+ob_led2.style.left = 210 ;
+
+let bb = 0;
+let bb_step = 4;
+
+function randomColor() {
+    bb+=bb_step;
+    if(bb >255) bb_step = -4;
+    else if(bb <5) bb_step = 4;
+    const b = bb;
+    return `rgba(${0},${0},${b},${(b)/255})`;
+}
+
+function change_color() {
+
+    requestAnimationFrame(change_color); // 每一幀重複呼叫自己
+    ob_led2.style.background = `radial-gradient(circle closest-side, ${randomColor()}, rgba(0,0,0,0))`;
+}
+change_color(); // 開始動畫
+
+/*
+const box = document.querySelector('.box');
+let x = 50; // 初始水平位置
+let step = 8;
+
+function move() {
+    x += step;
+    box.style.left = x ;
+    requestAnimationFrame(move); // 每一幀重複呼叫自己
+    if(x >1200) step = -8;
+    else if(x <20) step = 8;
+}
+move(); // 開始動畫
+*/
 </script>
-
-</body>
-</html>
