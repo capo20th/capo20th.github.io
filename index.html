@@ -1,102 +1,64 @@
-<canvas id="c" width="1000" height="300"
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>Keyboard Layout</title>
+    <style>
+        body {
+            background: #f0f0f0;
+            font-family: Arial, sans-serif;
+            position: relative;
+        }
 
-        ></canvas>
+        #keyboard {
+            position: relative;
+            width: 100%;
+            height: 600px;
+            background: #ddd;
+            border: 1px solid #999;
+        }
 
-<div class = "led" id = "led1"></div>
+        .keycap {
+            position: absolute;
+            border: 1px solid #333;
+            background-color: white;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
 
-<div class = "led" id = "led2"></div>
-
-<style>
-    body {
-    /*background: linear-gradient(45deg, red, yellow, green, blue);*/
-    background:black;
-}
-    .box{
-        position:absolute;
-        top : 23;
-        left : 128;
-        width : 100;
-        height : 100;
-        background :red;
-        z-index : 0;
-}
-
-    .led{
-        position:absolute;
-        top : 200;
-        left : 180;
-        width : 200px;
-        height : 200px;
-        border-radius :50%;
-        background: radial-gradient(circle closest-side, rgba(255,0,0,1),
-        rgba(255,0,0,0)
-        );
-        z-index : 0;
-}
-    #c {
-    position: absolute; /* 讓 z-index 生效 */
-    top: 100;
-    left: 100;
-
-    z-index: 1;        /* 比 .box 高 */
-}
-</style>
+<div id="keyboard"></div>
 
 <script>
-const canvas = document.getElementById('c');
-const ctx = canvas.getContext('2d');
+    // 讀 JSON 檔案
+    fetch('keyboss.json')
+        .then(response => response.json())
+        .then(data => {
+            const keyboard = document.getElementById('keyboard');
+            data.all_keycap.forEach(key => {
+                // 建立每一顆 keycap 的 div
+                const keyDiv = document.createElement('div');
+                keyDiv.className = 'keycap';
+                keyDiv.style.left = key.start_x + 'px';
+                keyDiv.style.top = key.start_y + 'px';
+                keyDiv.style.width = key.width + 'px';
+                keyDiv.style.height = key.height + 'px';
+                keyDiv.textContent = key.icon; // 顯示 icon 名稱
 
-// 畫大方塊
-ctx.fillStyle = 'rgb(50,50,50)';
-ctx.fillRect(0, 0, 1000, 300);
-
-// 挖小洞（清除部分像素）
-ctx.clearRect(150, 150, 50, 50);
-
-ctx.fillStyle = 'rgb(50,50,50)';
-ctx.fillRect(154, 154, 42, 42);
-
-// 設定字型和大小
-ctx.font = '30px Arial';      // 30px 大小，字型 Arial
-ctx.fillStyle = 'red';       // 填滿顏色藍色
-
-// 寫字
-ctx.fillText('Hello', 50, 50); // x=50, y=50
-
-const ob_led2 = document.getElementById('led2');
-ob_led2.style.background = 'radial-gradient(circle closest-side, rgba(0,255,0,1),rgba(0,255,0,0))';
-ob_led2.style.left = 210 ;
-
-let bb = 0;
-let bb_step = 4;
-
-function randomColor() {
-    bb+=bb_step;
-    if(bb >255) bb_step = -4;
-    else if(bb <5) bb_step = 4;
-    const b = bb;
-    return `rgba(${0},${0},${b},${(b)/255})`;
-}
-
-function change_color() {
-
-    requestAnimationFrame(change_color); // 每一幀重複呼叫自己
-    ob_led2.style.background = `radial-gradient(circle closest-side, ${randomColor()}, rgba(0,0,0,0))`;
-}
-change_color(); // 開始動畫
-
-/*
-const box = document.querySelector('.box');
-let x = 50; // 初始水平位置
-let step = 8;
-
-function move() {
-    x += step;
-    box.style.left = x ;
-    requestAnimationFrame(move); // 每一幀重複呼叫自己
-    if(x >1200) step = -8;
-    else if(x <20) step = 8;
-}
-move(); // 開始動畫
-*/
+                keyboard.appendChild(keyDiv);
+            });
+        })
+        .catch(error => {
+            console.error('讀取 JSON 失敗:', error);
+        });
 </script>
+
+</body>
+</html>
