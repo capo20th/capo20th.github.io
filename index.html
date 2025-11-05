@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>4 LED demo</title>
+  <style>
+    body { font-family: sans-serif; display:flex; flex-direction:column; align-items:center; padding:20px; }
+    #leds { display:flex; gap:12px; margin-top:12px; }
+    .led {
+      width:80px; height:80px; border-radius:8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      display:flex; align-items:center; justify-content:center;
+      color:#fff; font-weight:bold;
+    }
+    #controls { margin-top:12px; }
+  </style>
+</head>
+<body>
+  <h2>4 顆 LED 示範（由 wasm 的 led[][] 推動）</h2>
+
+  <div id="leds">
+    <div class="led" id="led0">LED0</div>
+    <div class="led" id="led1">LED1</div>
+    <div class="led" id="led2">LED2</div>
+    <div class="led" id="led3">LED3</div>
+  </div>
+
+  <div id="controls">
+    <button id="startBtn">開始動畫</button>
+    <button id="stopBtn" disabled>停止</button>
+  </div>
+
+  <!-- 載入 emscripten 產出的 main.js（請確定檔名對） -->
+  <script src="main.js"></script>
+
+  <script>
+    // 等 Module ready 後執行
+    var startBtn = document.getElementById('startBtn');
+    var stopBtn = document.getElementById('stopBtn');
+    var rafId = null;
+
+    // 當 emscripten 的 Module 載入完成時，會呼叫 Module.onRuntimeInitialized
+    Module.onRuntimeInitialized = function() {
+      // 使用 cwrap 產生 JS 可呼叫的函式介面
+      const init_led = Module.cwrap('init_led', 'void', []);
+      const update_led = Module.cwrap('update_led', 'void', []);
+      const get_led_ptr = Module.cwrap('get_led_ptr', 'number', []);
+      const get_led_count = Module.cwrap('get_led_count', 'number', []);
+      const get_led_stride = Module.cwrap('get_led_stride', 'number', []);
+
+      // 初始化 LED 狀態
+      init_led();
+
+      // 取得 led[][] 在 wasm memory 的位址、數量、每顆 stride
+      const ptr = get_led_ptr();
+      const count = get_led_count();
+      const stride = get_led_stride();
+
+      // 建立一個對 WASM memory 的視窗（Uint8Array）
+      // 長度 = count * stride
+      const buf = new Uint8Array(Module.HEAPU8.buffer, ptr, count * stride);
+
+      // helper：把 buffer 內容更新回畫面
+      function renderFromBuf() {
+        for (let i = 0; i < count; i++) {
+          const r = buf[i*stride + 0];
+          const g = buf[i*stride + 1];
+          const b = buf[i*stride + 2];
+          const el = document.getElementById('led' + i);
+          el.style.background = `rgb(${r}, ${g}, ${b})`;
+          // 同時把文字顯示為 hex，方便看數值
+          el.textContent = `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`.toUpperCase();
+        }
+      }
+
+      // 動畫迴圈：每幀呼叫 update_led，再 render
+      function frame() {
+        update_led();
+        renderFromBuf();
+        rafId = requestAnimationFrame(frame);
+      }
+
+      startBtn.onclick = function() {
+        if (rafId === null) {
+          rafId = requestAnimationFrame(frame);
+          startBtn.disabled = true;
+          stopBtn.disabled = false;
+        }
+      };
+
+      stopBtn.onclick = function() {
+        if (rafId !== null) {
+          cancelAnimationFrame(rafId);
+          rafId = null;
+          startBtn.disabled = false;
+          stopBtn.disabled = true;
+        }
+      };
+
+      // 預先 render 一次（初始化的顏色）
+      renderFromBuf();
+    };
+  </script>
+</body>
+</html>
