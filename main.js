@@ -1612,6 +1612,7 @@ var _update_led = Module['_update_led'] = makeInvalidEarlyAccess('_update_led');
 var _get_led_ptr = Module['_get_led_ptr'] = makeInvalidEarlyAccess('_get_led_ptr');
 var _get_led_count = Module['_get_led_count'] = makeInvalidEarlyAccess('_get_led_count');
 var _get_led_stride = Module['_get_led_stride'] = makeInvalidEarlyAccess('_get_led_stride');
+var _main = makeInvalidEarlyAccess('_main');
 var _fflush = makeInvalidEarlyAccess('_fflush');
 var _emscripten_stack_init = makeInvalidEarlyAccess('_emscripten_stack_init');
 var _emscripten_stack_get_free = makeInvalidEarlyAccess('_emscripten_stack_get_free');
@@ -1635,6 +1636,8 @@ function assignWasmExports(wasmExports) {
   _get_led_count = Module['_get_led_count'] = createExportWrapper('get_led_count', 0);
   assert(typeof wasmExports['get_led_stride'] != 'undefined', 'missing Wasm export: get_led_stride');
   _get_led_stride = Module['_get_led_stride'] = createExportWrapper('get_led_stride', 0);
+  assert(typeof wasmExports['main'] != 'undefined', 'missing Wasm export: main');
+  _main = createExportWrapper('main', 2);
   assert(typeof wasmExports['fflush'] != 'undefined', 'missing Wasm export: fflush');
   _fflush = createExportWrapper('fflush', 1);
   assert(typeof wasmExports['emscripten_stack_init'] != 'undefined', 'missing Wasm export: emscripten_stack_init');
