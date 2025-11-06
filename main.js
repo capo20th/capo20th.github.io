@@ -1607,7 +1607,6 @@ function checkIncomingModuleAPI() {
 }
 
 // Imports from the Wasm binary.
-var _init_led = Module['_init_led'] = makeInvalidEarlyAccess('_init_led');
 var _update_led = Module['_update_led'] = makeInvalidEarlyAccess('_update_led');
 var _get_led_ptr = Module['_get_led_ptr'] = makeInvalidEarlyAccess('_get_led_ptr');
 var _get_led_count = Module['_get_led_count'] = makeInvalidEarlyAccess('_get_led_count');
@@ -1626,8 +1625,6 @@ var __indirect_function_table = makeInvalidEarlyAccess('__indirect_function_tabl
 var wasmMemory = makeInvalidEarlyAccess('wasmMemory');
 
 function assignWasmExports(wasmExports) {
-  assert(typeof wasmExports['init_led'] != 'undefined', 'missing Wasm export: init_led');
-  _init_led = Module['_init_led'] = createExportWrapper('init_led', 0);
   assert(typeof wasmExports['update_led'] != 'undefined', 'missing Wasm export: update_led');
   _update_led = Module['_update_led'] = createExportWrapper('update_led', 0);
   assert(typeof wasmExports['get_led_ptr'] != 'undefined', 'missing Wasm export: get_led_ptr');
