@@ -1,104 +1,121 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="zh-TW">
 <head>
-  <meta charset="utf-8">
-  <title>4 LED demo</title>
-  <style>
-    body { font-family: sans-serif; display:flex; flex-direction:column; align-items:center; padding:20px; }
-    #leds { display:flex; gap:12px; margin-top:12px; }
-    .led {
-      width:80px; height:80px; border-radius:8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      display:flex; align-items:center; justify-content:center;
-      color:#fff; font-weight:bold;
-    }
-    #controls { margin-top:12px; }
-  </style>
+    <meta charset="UTF-8">
+    <title>Keyboard Layout</title>
+    <style>
+        body {
+            background: #f0f0f0;
+            font-family: Arial, sans-serif;
+            position: relative;
+        }
+
+
+        #keyboard {
+            position: relative;
+            width: 100%;
+            height: 600px;
+            background: transparent;
+            border: 1px solid #999;
+        }
+
+        .keycap {
+            position: absolute;
+            border: 1px solid #333;
+            background-color: white;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .led{
+            position: absolute;
+            border: 0px;
+            background-color: red;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
 </head>
+
 <body>
-  <h2>4 顆 LED 示範（由 wasm 的 led[][] 推動）</h2>
 
-  <div id="leds">
-    <div class="led" id="led0">LED0</div>
-    <div class="led" id="led1">LED1</div>
-    <div class="led" id="led2">LED2</div>
-    <div class="led" id="led3">LED3</div>
-  </div>
+<button id="startBtn">開始動畫</button>
+<div id="keyboard"></div>
 
-  <div id="controls">
-    <button id="startBtn">開始動畫</button>
-    <button id="stopBtn" disabled>停止</button>
-  </div>
+<script>
+    let startBtn = document.getElementById('startBtn');
+    const all_keycaps=[];
+    const all_leds=[];
 
-  <!-- 載入 emscripten 產出的 main.js（請確定檔名對） -->
-  <script src="main.js"></script>
+    // 讀 JSON 檔案
+    fetch('keyboard file(S).json')
+        .then(response => response.json())
+        .then(data => {
 
-  <script>
-    // 等 Module ready 後執行
-    var startBtn = document.getElementById('startBtn');
-    var stopBtn = document.getElementById('stopBtn');
-    var rafId = null;
+            const keyboard = document.getElementById('keyboard');
+            data.all_keycap.forEach(key => {
+                // 建立每一顆 keycap 的 div
+                const keyDiv = document.createElement('div');
+                keyDiv.className = 'keycap';
+                keyDiv.style.left = key.start_x + 'px';
+                keyDiv.style.top = key.start_y + 'px';
+                keyDiv.style.width = key.width + 'px';
+                keyDiv.style.height = key.height + 'px';
+                keyDiv.textContent = key.icon; // 顯示 icon 名稱
+                all_keycaps.push(keyDiv);
+                keyboard.appendChild(keyDiv);
 
-    // 當 emscripten 的 Module 載入完成時，會呼叫 Module.onRuntimeInitialized
-    Module.onRuntimeInitialized = function() {
-      // 使用 cwrap 產生 JS 可呼叫的函式介面
-      const init_led = Module.cwrap('init_led', 'void', []);
-      const update_led = Module.cwrap('update_led', 'void', []);
-      const get_led_ptr = Module.cwrap('get_led_ptr', 'number', []);
-      const get_led_count = Module.cwrap('get_led_count', 'number', []);
-      const get_led_stride = Module.cwrap('get_led_stride', 'number', []);
 
-      // 初始化 LED 狀態
-      init_led();
+            });
+            data.all_leds.forEach(led_j => {
+                // 建立每一顆 led 的 div
+                const ledDiv = document.createElement('div');
+                ledDiv.className = 'led';
+                ledDiv.style.left = led_j.x + 'px';
+                ledDiv.style.top = led_j.y + 'px';
+                ledDiv.style.width = 30 + 'px';
+                ledDiv.style.height = 30 + 'px';
+                ledDiv.setAttribute('row', led_j.scan_row);
+                ledDiv.setAttribute('col', led_j.col);
+                keyboard.appendChild(ledDiv);
 
-      // 取得 led[][] 在 wasm memory 的位址、數量、每顆 stride
-      const ptr = get_led_ptr();
-      const count = get_led_count();
-      const stride = get_led_stride();
+                const row = led_j.scan_row;
+                const col = led_j.col;
 
-      // 建立一個對 WASM memory 的視窗（Uint8Array）
-      // 長度 = count * stride
-      const buf = new Uint8Array(Module.HEAPU8.buffer, ptr, count * stride);
+                if (!all_leds[row]) {            // 如果這一列不存在，就先建立
+                    all_leds[row] = [];
+                }
+                all_leds[row][col] = ledDiv;      // 把這個 LED DOM 放進陣列
 
-      // helper：把 buffer 內容更新回畫面
-      function renderFromBuf() {
-        for (let i = 0; i < count; i++) {
-          const r = buf[i*stride + 0];
-          const g = buf[i*stride + 1];
-          const b = buf[i*stride + 2];
-          const el = document.getElementById('led' + i);
-          el.style.background = `rgb(${r}, ${g}, ${b})`;
-          // 同時把文字顯示為 hex，方便看數值
-          el.textContent = `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`.toUpperCase();
-        }
-      }
+            });
 
-      function frame() {// 動畫迴圈：每幀呼叫 update_led，再 render
-        update_led();
-        renderFromBuf();
-        rafId = requestAnimationFrame(frame);
-      }
 
-      startBtn.onclick = function() {
-        if (rafId === null) {
-          rafId = requestAnimationFrame(frame);
-          startBtn.disabled = true;
-          stopBtn.disabled = false;
-        }
-      };
 
-      stopBtn.onclick = function() {
-        if (rafId !== null) {
-          cancelAnimationFrame(rafId);
-          rafId = null;
-          startBtn.disabled = false;
-          stopBtn.disabled = true;
-        }
-      };
 
-      // 預先 render 一次（初始化的顏色）
-      renderFromBuf();
+        })
+        .catch(error => {
+            console.error('讀取 JSON 失敗:', error);
+        });
+
+    startBtn.onclick = function()
+    {
+        all_leds.forEach(row => {
+            row.forEach(led => {
+                led.style.background = 'yellow';
+            });
+        });
+
     };
-  </script>
+
+
+</script>
+
 </body>
 </html>
