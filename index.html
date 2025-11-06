@@ -41,6 +41,7 @@
 
     // 當 emscripten 的 Module 載入完成時，會呼叫 Module.onRuntimeInitialized
     Module.onRuntimeInitialized = function() {
+      Module._main();
       // 使用 cwrap 產生 JS 可呼叫的函式介面
       const init_led = Module.cwrap('init_led', 'void', []);
       const update_led = Module.cwrap('update_led', 'void', []);
