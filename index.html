@@ -40,14 +40,6 @@
             //display: none;
         }
 
-        #numberDisplay {
-            position: absolute;
-            top:550;
-            left:100;
-            font-size: 80px;
-            font-weight: bold;
-            text-shadow: 0 0 10px cyan, 0 0 20px cyan;
-        }
     </style>
 </head>
 
@@ -55,7 +47,6 @@
 
 <button id="startBtn" style="position:absolute; top:550px; left:20px;">開始動畫</button>
 <div id="keyboard"></div>
-<div id="numberDisplay"></div>
 <canvas id="ccanvas"></canvas>
 
 <script>
@@ -114,7 +105,6 @@
 
                 if(key.start_x + key.width > max_keycap_x) max_keycap_x = key.start_x + key.width;
                 if(key.start_y + key.height > max_keycap_y) max_keycap_y = key.start_y + key.height;
-                document.getElementById("numberDisplay").innerText = max_keycap_y;
             });
 
             document.getElementById("keyboard").style.width = max_keycap_x + 10 +'px';
