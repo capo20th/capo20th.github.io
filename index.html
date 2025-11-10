@@ -5,31 +5,26 @@
     <title>Keyboard Layout</title>
     <style>
         body {
-            background: #f0f0f0;
+            background: rgba(0,0,0,1);
             font-family: Arial, sans-serif;
             position: relative;
         }
 
-
         #keyboard {
+            margin: 0 auto;
             position: relative;
-            width: 100%;
-            height: 600px;
-            background: transparent;
-            border: 1px solid #999;
+            background: rgba(0,0,0,1);
+            border: 10px solid #999;
         }
 
         .keycap {
             position: absolute;
-            border: 1px solid #333;
-            background-color: white;
-            border-radius: 5px;
+            border: 0px solid #333;
+            background-color: rgba(30,30,30,1);
+            border-radius: 3px;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            font-weight: bold;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+            z-index:1;
+            visibility: hidden;
         }
 
         .led{
@@ -40,48 +35,99 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            mix-blend-mode: screen;
+            z-index:0;
+            //display: none;
+        }
+
+        #numberDisplay {
+            position: absolute;
+            top:550;
+            left:100;
+            font-size: 80px;
+            font-weight: bold;
+            text-shadow: 0 0 10px cyan, 0 0 20px cyan;
         }
     </style>
 </head>
 
 <body>
 
-<button id="startBtn">開始動畫</button>
+<button id="startBtn" style="position:absolute; top:550px; left:20px;">開始動畫</button>
 <div id="keyboard"></div>
+<div id="numberDisplay"></div>
+<canvas id="ccanvas"></canvas>
 
 <script>
     let startBtn = document.getElementById('startBtn');
+    const led_solid_radius = 10;
+    const led_soft_radius = 120;
+    const keycap_light_edge_width = 0;
+
+
+    let max_keycap_x = 0;
+    let max_keycap_y = 0;
+    const led_light_cover = 100;
+
     const all_keycaps=[];
     const all_leds=[];
+    let rr = 255;
+    let gg = 255;
+    let bb = 0;
+    let step = 1;
 
-    // 讀 JSON 檔案
-    fetch('keyboard file(S).json')
+//----------------------Object Color-----------------------------
+    const mainBg = 'rgb(240,240,240)';
+    const KB_shell_color = 'rgb(30,30,30)';
+    const Keycap_color = 'rgb(50,50,50)';
+    const Keycap_edge_color = 'rgb(128,128,128)';
+
+    //--------Calculate Keycap_shadow_color-----------------
+        let rgb_temp = KB_shell_color.match(/\d+/g).map(Number);
+        for (let i = 0; i < rgb_temp.length; i++) {
+            if(rgb_temp[i] >=30)rgb_temp[i] -= 30;
+            else rgb_temp[i] = 0;
+        }
+        const Keycap_shadow_color = `rgba(${rgb_temp[0]},${rgb_temp[1]},${rgb_temp[2]},1)`;
+
+    //--------Draw basic color on something-----------------
+        document.body.style.backgroundColor = mainBg;
+        keyboard.style.backgroundColor = Keycap_edge_color;
+
+//----------------------json load-----------------------------
+    fetch('test basic 100(S).json')
         .then(response => response.json())
         .then(data => {
 
             const keyboard = document.getElementById('keyboard');
+
             data.all_keycap.forEach(key => {
-                // 建立每一顆 keycap 的 div
                 const keyDiv = document.createElement('div');
                 keyDiv.className = 'keycap';
-                keyDiv.style.left = key.start_x + 'px';
-                keyDiv.style.top = key.start_y + 'px';
-                keyDiv.style.width = key.width + 'px';
-                keyDiv.style.height = key.height + 'px';
-                keyDiv.textContent = key.icon; // 顯示 icon 名稱
+                keyDiv.style.left = key.start_x +keycap_light_edge_width + 'px';
+                keyDiv.style.top = key.start_y +keycap_light_edge_width + 'px';
+                keyDiv.style.width = key.width-2*keycap_light_edge_width + 'px';
+                keyDiv.style.height = key.height-2*keycap_light_edge_width + 'px';
+                keyDiv.textContent = key.icon;
                 all_keycaps.push(keyDiv);
                 keyboard.appendChild(keyDiv);
 
-
+                if(key.start_x + key.width > max_keycap_x) max_keycap_x = key.start_x + key.width;
+                if(key.start_y + key.height > max_keycap_y) max_keycap_y = key.start_y + key.height;
+                document.getElementById("numberDisplay").innerText = max_keycap_y;
             });
+
+            document.getElementById("keyboard").style.width = max_keycap_x + 10 +'px';
+            document.getElementById("keyboard").style.height = max_keycap_y + 30 +'px';
+
             data.all_leds.forEach(led_j => {
-                // 建立每一顆 led 的 div
                 const ledDiv = document.createElement('div');
                 ledDiv.className = 'led';
-                ledDiv.style.left = led_j.x + 'px';
-                ledDiv.style.top = led_j.y + 'px';
-                ledDiv.style.width = 30 + 'px';
-                ledDiv.style.height = 30 + 'px';
+                ledDiv.style.left = led_j.x-led_soft_radius + 'px';
+                ledDiv.style.top = led_j.y-led_soft_radius + 'px';
+                ledDiv.style.width = led_soft_radius*2 + 'px';
+                ledDiv.style.height = led_soft_radius*2 + 'px';
+                ledDiv.style.background = 'radial-gradient(circle closest-side, rgba(255,0,0,1), rgba(0,0,0,0))';
                 ledDiv.setAttribute('row', led_j.scan_row);
                 ledDiv.setAttribute('col', led_j.col);
                 keyboard.appendChild(ledDiv);
@@ -89,12 +135,113 @@
                 const row = led_j.scan_row;
                 const col = led_j.col;
 
-                if (!all_leds[row]) {            // 如果這一列不存在，就先建立
+                if (!all_leds[row]) {            // if ti doesn't exist, build
                     all_leds[row] = [];
                 }
-                all_leds[row][col] = ledDiv;      // 把這個 LED DOM 放進陣列
+                all_leds[row][col] = ledDiv;      // put it in!!!
 
             });
+
+            const ccanvas = document.getElementById('ccanvas');
+            keyboard.appendChild(ccanvas);
+            ccanvas.style.position = 'absolute';
+            ccanvas.style.left = -led_light_cover+'px';
+            ccanvas.style.top = -led_light_cover+'px';
+
+            //const dpr = window.devicePixelRatio || 1;
+            const dpr = 3;
+            const rect = keyboard.getBoundingClientRect();
+
+            // real pixel width,height
+            ccanvas.width = (rect.width+led_light_cover*2) * dpr;
+            ccanvas.height = (rect.height+led_light_cover*2) * dpr;
+
+            // real size in your eyes
+            ccanvas.style.width = rect.width+led_light_cover*2 + 'px';
+            ccanvas.style.height = rect.height+led_light_cover*2 + 'px';
+
+            const ctx = ccanvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+
+            // Draw background color mask, for the led light which is over the KB
+            ctx.fillStyle = mainBg;
+            ctx.fillRect(0, 0, ccanvas.offsetWidth, ccanvas.offsetHeight);
+
+            // Draw KB shell
+            ctx.fillStyle = KB_shell_color;
+            RoundRect(ctx,
+                      led_light_cover,
+                      led_light_cover,
+                      keyboard.offsetWidth,
+                      keyboard.offsetHeight,
+                      20);
+
+            // Draw keycap shadow
+            ctx.fillStyle = Keycap_shadow_color;
+            all_keycaps.forEach(key => {
+                RoundRect(ctx,
+                          key.offsetLeft-keycap_light_edge_width+led_light_cover+3,
+                          key.offsetTop-keycap_light_edge_width+led_light_cover+3,
+                          key.offsetWidth+2*keycap_light_edge_width,
+                          key.offsetHeight+2*keycap_light_edge_width,
+                          5);
+            });
+
+            // set to hollow mode
+            ctx.save();
+            ctx.globalCompositeOperation = 'destination-out';
+
+            // hollow out the keycap holes
+            all_keycaps.forEach(key => {
+                RoundRect(ctx,
+                          key.offsetLeft-keycap_light_edge_width+led_light_cover,
+                          key.offsetTop-keycap_light_edge_width+led_light_cover,
+                          key.offsetWidth+2*keycap_light_edge_width,
+                          key.offsetHeight+2*keycap_light_edge_width,
+                          5);
+            });
+            ctx.save();
+
+            // Draw keycaps
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = Keycap_color;
+            all_keycaps.forEach(key => {
+                RoundRect(ctx, key.offsetLeft+led_light_cover, key.offsetTop+led_light_cover, key.offsetWidth, key.offsetHeight, 3);
+            });
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'destination-out';
+            //
+
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            all_keycaps.forEach(key => {
+                const lines = key.textContent.split(/\r?\n/); // \r\n 或 \n 都支援
+                const x = key.offsetLeft + key.offsetWidth / 2+led_light_cover;
+                const y = key.offsetTop + key.offsetHeight / 2+led_light_cover;
+                const lineHeight = 16; // 每行間距，可以調整
+
+                lines.forEach((line, i) => {
+                    ctx.fillText(line, x, y + i * lineHeight - (lines.length-1)*lineHeight/2);
+                });
+            });
+            ctx.restore();
+
+
+            const intervalId = setInterval(() => {
+                bb+=step;
+                gg-=step
+                if(bb > 250) step = -1;
+                else if(bb<1) step = 1;
+                all_leds.forEach(row => {
+                    row.forEach(led => {
+                        led.style.background =  `radial-gradient(circle closest-side, rgba(${rr},${gg},${bb},1), rgba(0,0,0,0))`;
+                        });
+                    });
+
+                }, 20);
 
 
 
@@ -104,15 +251,36 @@
             console.error('讀取 JSON 失敗:', error);
         });
 
+
     startBtn.onclick = function()
     {
         all_leds.forEach(row => {
             row.forEach(led => {
-                led.style.background = 'yellow';
+                const left = parseInt(led.style.left, 10);
+                if(left <400)led.style.background = 'radial-gradient(circle closest-side, rgba(0,255,0,1), rgba(0,0,0,0))';
+                else if(left <800)led.style.background = 'radial-gradient(circle closest-side, rgba(0,0,255,1), rgba(0,0,0,0))';
+                else led.style.background = 'radial-gradient(circle closest-side, rgba(255,0,0,1), rgba(0,0,0,0))';
             });
         });
 
     };
+
+    function RoundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+    ctx.fill();
+    }
+
+
 
 
 </script>
