@@ -1607,10 +1607,7 @@ function checkIncomingModuleAPI() {
 }
 
 // Imports from the Wasm binary.
-var _update_led = Module['_update_led'] = makeInvalidEarlyAccess('_update_led');
-var _get_led_ptr = Module['_get_led_ptr'] = makeInvalidEarlyAccess('_get_led_ptr');
-var _get_led_count = Module['_get_led_count'] = makeInvalidEarlyAccess('_get_led_count');
-var _get_led_stride = Module['_get_led_stride'] = makeInvalidEarlyAccess('_get_led_stride');
+var _get_share_buf_ptr = Module['_get_share_buf_ptr'] = makeInvalidEarlyAccess('_get_share_buf_ptr');
 var _led_effect_main = Module['_led_effect_main'] = makeInvalidEarlyAccess('_led_effect_main');
 var _main = makeInvalidEarlyAccess('_main');
 var _fflush = makeInvalidEarlyAccess('_fflush');
@@ -1626,14 +1623,8 @@ var __indirect_function_table = makeInvalidEarlyAccess('__indirect_function_tabl
 var wasmMemory = makeInvalidEarlyAccess('wasmMemory');
 
 function assignWasmExports(wasmExports) {
-  assert(typeof wasmExports['update_led'] != 'undefined', 'missing Wasm export: update_led');
-  _update_led = Module['_update_led'] = createExportWrapper('update_led', 0);
-  assert(typeof wasmExports['get_led_ptr'] != 'undefined', 'missing Wasm export: get_led_ptr');
-  _get_led_ptr = Module['_get_led_ptr'] = createExportWrapper('get_led_ptr', 0);
-  assert(typeof wasmExports['get_led_count'] != 'undefined', 'missing Wasm export: get_led_count');
-  _get_led_count = Module['_get_led_count'] = createExportWrapper('get_led_count', 0);
-  assert(typeof wasmExports['get_led_stride'] != 'undefined', 'missing Wasm export: get_led_stride');
-  _get_led_stride = Module['_get_led_stride'] = createExportWrapper('get_led_stride', 0);
+  assert(typeof wasmExports['get_share_buf_ptr'] != 'undefined', 'missing Wasm export: get_share_buf_ptr');
+  _get_share_buf_ptr = Module['_get_share_buf_ptr'] = createExportWrapper('get_share_buf_ptr', 0);
   assert(typeof wasmExports['led_effect_main'] != 'undefined', 'missing Wasm export: led_effect_main');
   _led_effect_main = Module['_led_effect_main'] = createExportWrapper('led_effect_main', 0);
   assert(typeof wasmExports['main'] != 'undefined', 'missing Wasm export: main');

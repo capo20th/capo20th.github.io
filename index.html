@@ -109,7 +109,7 @@
             <input type="range" id="bar_round_rate" min="0.5" max="20" step = "0.5" value="5">
         </div>
         <div class="cell2">
-            <button id="btn_ss" class = "Btn" id="startBtn" >開始動畫</button>
+            <button id="btn_ss" class = "Btn" id="startBtn" >測試按鈕</button>
         </div>
 
 
@@ -130,14 +130,48 @@
     <div class="cell"></div>
     <div class="cell"></div>
 </div>
-
+<script src="main.js"></script>
 <script>
 
+    let elec_max_row;
+    let elec_max_col;
+    let R_value_src = [];
+    let G_value_src = [];
+    let B_value_src = [];
+    let static_color;
+
+    let led_effect_main;
+
+
+    Module.onRuntimeInitialized = function() {
+        // 使用 cwrap 產生 JS 可呼叫的函式介面
+        led_effect_main = Module.cwrap('led_effect_main', 'void', []);
+        const get_share_buf_ptr = Module.cwrap('get_share_buf_ptr','number',[]);
+
+        const elec_max_row_addr_start = get_share_buf_ptr();
+        const elec_max_col_addr_start = get_share_buf_ptr();
+        const R_addr_start = get_share_buf_ptr();
+        const G_addr_start = get_share_buf_ptr();
+        const B_addr_start = get_share_buf_ptr();
+        const static_color_addr_start = get_share_buf_ptr();
+
+        // 建立一個對 WASM memory 的視窗（Uint8Array）
+        // 長度 = count * stride
+        elec_max_row= new Uint8Array(Module.HEAPU8.buffer, elec_max_row_addr_start, 1);
+        elec_max_col= new Uint8Array(Module.HEAPU8.buffer, elec_max_col_addr_start, 1);
+        elec_max_row = elec_max_row[0];
+        elec_max_col = elec_max_col[0];
+
+        R_value_src = new Uint8Array(Module.HEAPU8.buffer, R_addr_start, elec_max_row*elec_max_col);
+        G_value_src = new Uint8Array(Module.HEAPU8.buffer, G_addr_start, elec_max_row*elec_max_col);
+        B_value_src = new Uint8Array(Module.HEAPU8.buffer, B_addr_start, elec_max_row*elec_max_col);
+        static_color= new Uint8Array(Module.HEAPU8.buffer, static_color_addr_start, 1);
+ };
+
     let led_solid_radius = 14;
-    let led_soft_radius = 120;
+    let led_soft_radius = 80;
     let keycap_light_edge_width = 2;
     let keycap_round_rate = 5;
-
 
     let max_keycap_x = 0;
     let max_keycap_y = 0;
@@ -146,8 +180,6 @@
     let ctx;
     const led_light_cover = 100;
 
-    let elec_max_row = 0;
-    let elec_max_col = 0;
     const all_keycaps=[];
     const all_leds=[];
 
@@ -159,8 +191,8 @@
 
 //----------------------Object Color-----------------------------
     const mainBg = 'rgba(20,20,20,1)';
-    let KB_shell_color = 'rgba(200,200,200,1)';
-    let Keycap_color = 'rgba(180,180,180,1)';
+    let KB_shell_color = 'rgba(50,50,50,1)';
+    let Keycap_color = 'rgba(70,70,70,1)';
     let Keycap_edge_color = 'rgb(128,128,128)';
 
     //--------Draw basic color on something-----------------
@@ -168,7 +200,7 @@
         keyboard.style.backgroundColor = Keycap_edge_color;
 
 //----------------------json load-----------------------------
-    fetch('HP_F_ELEC FULL_LOST1(S).json')
+    fetch('HP_F_ELEC FULL(S).json')
         .then(response => response.json())
         .then(data => {
 
@@ -199,7 +231,7 @@
                 ledDiv.style.top = led_j.y-led_soft_radius + 'px';
                 ledDiv.style.width = led_soft_radius*2 + 'px';
                 ledDiv.style.height = led_soft_radius*2 + 'px';
-                ledDiv.style.background = 'radial-gradient(circle closest-side, rgba(255,0,0,1), rgba(0,0,0,0))';
+                ledDiv.style.background = 'radial-gradient(circle closest-side, rgba(0,0,0,1), rgba(0,0,0,0))';
                 ledDiv.row = led_j.scan_row;
                 ledDiv.col = led_j.col;
                 ledDiv.softx = led_j.x-led_soft_radius;
@@ -211,28 +243,12 @@
                 const row = led_j.scan_row;
                 const col = led_j.col;
 
-                if(row > elec_max_row)elec_max_row = row;
-                if(col > elec_max_col)elec_max_col = col;
-
                 if (!all_leds[row]) {            // if it doesn't exist, build
                     all_leds[row] = [];
                 }
                 all_leds[row][col] = ledDiv;      // put it in!!!
 
             });
-
-            /*for(let row = 0;row <=elec_max_row ;row++)
-            {
-                for(let col = 0;col <=elec_max_col ;col++)
-                {
-                    all_leds[row][col] = null;
-                }
-            }
-
-            console.log("row:");
-            console.log(elec_max_row);
-            console.log("col:");
-            console.log(elec_max_col);*/
 
             keyboard.appendChild(ccanvas);
             ccanvas.style.position = 'absolute';
@@ -255,24 +271,36 @@
             ctx.scale(dpr, dpr);
 
             draw_with_keycap();
+        //------------call led effect---------------
+            const call_led_effect = setInterval(() => {
+                led_effect_main();
+            }, 20);
 
-            const intervalId = setInterval(() => {
+        //------------update screen---------------
+            const update_screen = setInterval(() => {
+                for(let row = 0 ; row < elec_max_row;row++ )
+                {
+                    for(let col = 0 ;col < elec_max_col; col++)
+                    {
+                        rr = R_value_src[row*elec_max_col+col];
+                        gg = G_value_src[row*elec_max_col+col];
+                        bb = B_value_src[row*elec_max_col+col];
+                        if(all_leds[row][col] != undefined)
+                        {
+                            if(dis_index == 'dis_Keycap')all_leds[row][col].style.background =  `radial-gradient(circle closest-side, rgba(${rr},${gg},${bb},1), rgba(0,0,0,0))`;
+                            else if(dis_index == 'dis_Led')all_leds[row][col].style.background =`rgba(${rr},${gg},${bb},1)`;
+                        }
+                    }
+                }
 
+            }, 33);
+        //------------something control---------------
+            const something_control = setInterval(() => {
+                static_color[0]++;
+                if(static_color[0]>8)static_color[0] = 1;
 
+            }, 1000);
 
-                bb+=step;
-                gg-=step
-                if(bb > 250) step = -5;
-                else if(bb<1) step = 5;
-                all_leds.forEach(row => {
-                    row.forEach(led => {
-                        if(dis_index == 'dis_Keycap')led.style.background =  `radial-gradient(circle closest-side, rgba(${rr},${gg},${bb},1), rgba(0,0,0,0))`;
-                        else if(dis_index == 'dis_Led')led.style.background =`rgba(${rr},${gg},${bb},1)`;
-                    });
-                });
-
-
-                }, 20);
 //----------------------------ctrl area------------------------------
             const ctrl_pad = document.getElementById('ctrlPad');
             ctrl_pad.style.top = led_light_cover/2+'px';
@@ -333,15 +361,10 @@
     const startBtn = document.getElementById('btn_ss');
     startBtn.onclick = function()
     {
-        /*for (let i = 0; i < all_leds.length; i++) {
-
-            for (let j = 0; j < all_leds[i].length; j++) {
-                if(all_leds[i][j] != undefined) all_leds[i][j].style.background = 'rgba(255,255,255,1)';
-            }
-        }
-*/
-        if(rr >200) rr = 0;
-        else rr = 255;
+        console.log(elec_max_row);
+        console.log(elec_max_col);
+        //console.log(B_value_src.join(" "));
+        //console.log(R_value_src[3*11+6]);
         /*
         all_leds.forEach(row => {
             row.forEach(led => {
@@ -409,11 +432,9 @@
         else if (KB_shell_color.startsWith('rgb')) {
             rgb_temp = KB_shell_color.match(/\d+/g).map(Number);
         }
-        for (let i = 0; i < rgb_temp.length; i++) {
-            rgb_temp[i]*=0.7;
-        }
+        for (let i = 0; i < rgb_temp.length; i++)rgb_temp[i]*=0.7;
+
         const Keycap_shadow_color = `rgb(${rgb_temp[0]},${rgb_temp[1]},${rgb_temp[2]})`;
-        console.log("有畫");
         ctx.globalCompositeOperation = 'source-over';
         ctx.fillStyle = Keycap_shadow_color;
         all_keycaps.forEach(key => {
