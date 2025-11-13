@@ -1610,6 +1610,7 @@ function checkIncomingModuleAPI() {
 var _get_share_buf_ptr = Module['_get_share_buf_ptr'] = makeInvalidEarlyAccess('_get_share_buf_ptr');
 var _led_effect_main = Module['_led_effect_main'] = makeInvalidEarlyAccess('_led_effect_main');
 var _main = makeInvalidEarlyAccess('_main');
+var _key_reactive = Module['_key_reactive'] = makeInvalidEarlyAccess('_key_reactive');
 var _fflush = makeInvalidEarlyAccess('_fflush');
 var _emscripten_stack_init = makeInvalidEarlyAccess('_emscripten_stack_init');
 var _emscripten_stack_get_free = makeInvalidEarlyAccess('_emscripten_stack_get_free');
@@ -1629,6 +1630,8 @@ function assignWasmExports(wasmExports) {
   _led_effect_main = Module['_led_effect_main'] = createExportWrapper('led_effect_main', 0);
   assert(typeof wasmExports['main'] != 'undefined', 'missing Wasm export: main');
   _main = createExportWrapper('main', 2);
+  assert(typeof wasmExports['key_reactive'] != 'undefined', 'missing Wasm export: key_reactive');
+  _key_reactive = Module['_key_reactive'] = createExportWrapper('key_reactive', 1);
   assert(typeof wasmExports['fflush'] != 'undefined', 'missing Wasm export: fflush');
   _fflush = createExportWrapper('fflush', 1);
   assert(typeof wasmExports['emscripten_stack_init'] != 'undefined', 'missing Wasm export: emscripten_stack_init');
